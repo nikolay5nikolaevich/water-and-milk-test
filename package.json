@@ -1,0 +1,16 @@
+{
+  "name": "reorder-calc",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "calc": "node cli.js",
+    "test": "python -m unittest discover tests -v"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}

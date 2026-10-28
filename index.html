@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Расчёт заказа — Вода и молоко</title>
+  <meta name="description" content="Сколько заказать у поставщика, чтобы товара хватило до поставки и ещё на 7 дней.">
+  <meta name="theme-color" content="#0c0c0a">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Comfortaa:wght@700&display=swap">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- Шапка в стиле сцен сайта «Вода и молоко»: кадр с баром, текст слева на затемнении -->
+  <header class="hero">
+    <img class="hero-bg" src="/img/hero.webp" alt="" fetchpriority="high">
+    <div class="hero-shade"></div>
+    <div class="hero-top">
+      <img class="logo" src="/img/logo.png" alt="Вода и молоко">
+      <span class="label">Тестовое задание</span>
+    </div>
+    <div class="hero-copy">
+      <p class="label">Заказ поставщикам</p>
+      <h1 class="title"><span class="line">Расчёт</span><span class="script"><span>заказа</span></span></h1>
+      <p class="hero-lead">Сколько заказать у поставщика, чтобы товара хватило до поставки и ещё на 7 дней.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="source" role="group" aria-label="Данные для расчёта">
+        <button type="button" data-src="sample" aria-pressed="true">Пример</button>
+        <button type="button" data-src="invalid" aria-pressed="false">Пример с ошибками</button>
+        <label class="file-btn">
+          <span id="fileLabel">Свой файл CSV</span>
+          <input type="file" id="file" accept=".csv,text/csv">
+        </label>
+      </div>
+      <button type="button" class="btn-yellow" id="download">Скачать отчёт <span>→</span></button>
+    </div>
+
+    <details class="raw">
+      <summary>Показать и изменить исходные данные</summary>
+      <p class="hint">Правки пересчитываются сразу. Файл на диске не меняется.</p>
+      <textarea id="csv" spellcheck="false" rows="10" aria-label="Исходные данные в формате CSV"></textarea>
+    </details>
+
+    <!-- Показывается, только если в файле есть ошибки: сам файл с подсветкой, под ним список ошибок -->
+    <section id="check" class="check" hidden>
+      <div id="demoNote" class="demo-note" hidden>
+        <p class="label">Демонстрация</p>
+        <p>
+          В таблице из ТЗ ошибок нет. Этот файл испорчен специально, чтобы показать,
+          как программа поведёт себя, если ошибки появятся в реальных данных.
+        </p>
+      </div>
+      <p class="label">Шаг 1</p>
+      <h2 class="detail-title">Исходный файл</h2>
+      <p class="detail-lead">Файл как он есть. Подсвечены ячейки, из-за которых строка не вошла в расчёт.</p>
+      <div class="table-wrap">
+        <table class="src-table">
+          <thead id="srcHead"></thead>
+          <tbody id="srcRows"></tbody>
+        </table>
+      </div>
+
+      <p class="label step">Шаг 2</p>
+      <h2 class="detail-title">Что нашла проверка</h2>
+      <div id="errors" class="errors"></div>
+
+      <p class="label step">Шаг 3</p>
+      <h2 class="detail-title">Расчёт по корректным строкам</h2>
+    </section>
+
+    <section class="verdict" aria-live="polite">
+      <h2 class="title"><span class="line" id="headline"></span><span class="script"><span id="headline2"></span></span></h2>
+      <p id="subline"></p>
+    </section>
+
+    <label class="only"><input type="checkbox" id="onlyOrder"> Только то, что нужно заказать</label>
+    <section class="list">
+      <div class="list-head label">
+        <span>Товар</span>
+        <span>Запас: есть и нужно</span>
+        <span class="r">Заказать</span>
+      </div>
+      <ul id="rows"></ul>
+    </section>
+
+    <div class="legend">
+      <span><i class="sw have"></i>Есть: на складе и в пути</span>
+      <span><i class="sw gap"></i>Не хватает: это и есть заказ</span>
+      <span><i class="sw extra"></i>Сверх нужного</span>
+    </div>
+
+    <section class="detail">
+      <p class="label">Как в ТЗ</p>
+      <h2 class="detail-title">Подробный расчёт</h2>
+      <p class="detail-lead">
+        Все исходные данные и каждый шаг формулы. Запас планируем на срок поставки и ещё на 7 дней;
+        товар в пути считаем уже нашим, он придёт не позже новой партии.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr class="groups label">
+              <th></th>
+              <th colspan="5" class="g-in">Исходные данные</th>
+              <th colspan="4" class="g-calc">Расчёт</th>
+            </tr>
+            <tr>
+              <th>Товар<small>name, sku</small></th>
+              <th class="g-in">Остаток<small>stock, шт.</small></th>
+              <th class="g-in">Продажи в день<small>daily_sales, шт.</small></th>
+              <th class="g-in">В пути<small>incoming, шт.</small></th>
+              <th class="g-in">Срок поставки<small>lead_days, дн.</small></th>
+              <th class="g-in">Страховой запас<small>safety_stock, шт.</small></th>
+              <th class="g-calc">Период<small>срок + 7 дней</small></th>
+              <th class="g-calc">Целевой запас<small>⌈продажи × период + страховой⌉</small></th>
+              <th class="g-calc">Доступно<small>остаток + в пути</small></th>
+              <th class="g-calc">Заказ<small>целевой − доступно, не меньше 0</small></th>
+            </tr>
+          </thead>
+          <tbody id="detailRows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <img src="/img/logo.png" alt="">
+    <span>Расчёт заказа для «Вода и молоко»</span>
+    <a href="https://t.me/volopopi">Telegram @volopopi</a>
+  </footer>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
